@@ -25,10 +25,11 @@ get_target_property(MKDATA_EXE mkdata LOCATION)
 
 set(SOURCES
     main.c
+    memory_utils.c
 )
 
 add_executable(gpsmon ${SOURCES})
 target_link_libraries(gpsmon ${CMAKE_THREAD_LIBS_INIT}
-    ${GPSD_LIBRARY})
+    ${GPSD_LIBRARY} -lm)
 
 install(TARGETS gpsmon DESTINATION bin)

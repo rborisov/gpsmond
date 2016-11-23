@@ -11,24 +11,32 @@
 #include <assert.h>
 #include <gps.h>
 #include <math.h>
+#include <syslog.h>
+
+#include "memory_utils.h"
 
 int main()
 {
     int rc;
     struct timeval tv;
+    int speedkph;
+    char speedstr[3];
 
     struct gps_data_t gps_data;
     if ((rc = gps_open("localhost", "2947", &gps_data)) == -1) {
-        printf("code: %d, reason: %s\n", rc, gps_errstr(rc));
+        syslog(LOG_ERR, "%s: code: %d, reason: %s\n", __func__, rc, 
+                gps_errstr(rc));
         return EXIT_FAILURE;
     }
+
     gps_stream(&gps_data, WATCH_ENABLE | WATCH_JSON, NULL);
     while (1) {
         /* wait for 2 seconds to receive data */
         if (gps_waiting (&gps_data, 2000000)) {
             /* read data */
             if ((rc = gps_read(&gps_data)) == -1) {
-                printf("error occured reading gps data. code: %d, reason: %s\n", rc, gps_errstr(rc));
+                syslog(LOG_ERR, "%s: error occured reading gps data. code: %d, \
+                        reason: %s\n", __func__, rc, gps_errstr(rc));
             } else {
                 /* Display data from the GPS receiver. */
                 if ((gps_data.status == STATUS_FIX) && 
@@ -37,12 +45,19 @@ int main()
                         !isnan(gps_data.fix.longitude)) {
                     gettimeofday(&tv, NULL);
 
-                    printf("%f, %f, %f, %f\n", gps_data.fix.latitude,gps_data.fix.longitude,gps_data.fix.speed,tv.tv_sec);
+                    syslog(LOG_DEBUG, "%s: %f, %f, %f, %d", __func__, 
+                            gps_data.fix.latitude, gps_data.fix.longitude,
+                            gps_data.fix.speed, tv.tv_sec);
 
+                    speedkph = round(gps_data.fix.speed*3.6);
 
-                } else {
-                    printf("Nothing\n");
-                }
+                    if (speedkph > 0 && speedkph < 300) {
+                        sprintf(speedstr, "%d", speedkph);
+                        send_to_server("[speed]", speedstr);
+                    }
+                }/* else {
+                    printf(".");
+                }*/
             }
         }
 
