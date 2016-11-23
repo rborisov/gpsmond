@@ -15,6 +15,8 @@
 
 #include "memory_utils.h"
 
+static int speedsaved = 0;
+
 int main()
 {
     int rc;
@@ -51,9 +53,12 @@ int main()
 
                     speedkph = round(gps_data.fix.speed*3.6);
 
-                    if (speedkph > 0 && speedkph < 300) {
+                    if ((speedkph > 0) && 
+                            (speedkph < 300) && 
+                            (speedkph != speedsaved)) {
                         sprintf(speedstr, "%d", speedkph);
                         send_to_server("[speed]", speedstr);
+                        speedsaved = speedkph;
                     }
                 }/* else {
                     printf(".");
@@ -61,7 +66,7 @@ int main()
             }
         }
 
-        sleep(1);
+//        sleep(1);
     }
 
     /* When you are done... */
